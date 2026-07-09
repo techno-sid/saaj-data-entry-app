@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+  <title>Saaj Creation Data Entry</title>
+  <!-- Material Symbols -->
+  <link
+    href="https://fonts.googleapis.com/css2?family=Noto+Serif:wght@400;500;700&amp;family=Manrope:wght@400;500;700&amp;display=swap"
+    rel="stylesheet" />
+  <!-- Google Fonts -->
+  <link
+    href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;700&amp;family=Noto+Serif:wght@600;700&amp;display=swap"
+    rel="stylesheet" />
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+
+    /* Hide scrollbar for Chrome, Safari and Opera */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+
+    /* Hide scrollbar for IE, Edge and Firefox */
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      /* IE and Edge */
+      scrollbar-width: none;
+      /* Firefox */
+    }
+
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+  </style>
+  <script
+    id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { colors: { "on-tertiary-container": "#858480", "outline-variant": "#c6c6cd", "on-tertiary": "#ffffff", "on-error-container": "#93000a", tertiary: "#000000", "surface-container-high": "#dce9ff", surface: "#f8f9ff", "surface-variant": "#d3e4fe", "secondary-container": "#fed488", "on-background": "#0b1c30", error: "#ba1a1a", "error-container": "#ffdad6", "primary-container": "#131b2e", "surface-tint": "#565e74", "primary-fixed": "#dae2fd", "surface-dim": "#cbdbf5", "on-secondary-container": "#785a1a", "on-error": "#ffffff", "on-surface-variant": "#45464d", background: "#f8f9ff", "on-primary-fixed-variant": "#3f465c", "on-secondary-fixed-variant": "#5d4201", "primary-fixed-dim": "#bec6e0", "on-primary-container": "#7c839b", "on-tertiary-fixed": "#1c1c19", "surface-container-lowest": "#ffffff", "on-primary": "#ffffff", "on-secondary-fixed": "#261900", "inverse-primary": "#bec6e0", "secondary-fixed": "#ffdea5", "on-secondary": "#ffffff", "surface-container": "#e5eeff", "surface-bright": "#f8f9ff", "inverse-on-surface": "#eaf1ff", primary: "#000000", "surface-container-highest": "#d3e4fe", "on-surface": "#0b1c30", "on-primary-fixed": "#131b2e", "tertiary-fixed-dim": "#c8c6c2", "surface-container-low": "#eff4ff", "tertiary-container": "#1c1c19", "secondary-fixed-dim": "#e9c176", "tertiary-fixed": "#e5e2dd", outline: "#76777d", secondary: "#775a19", "inverse-surface": "#213145", "on-tertiary-fixed-variant": "#474743" }, borderRadius: { DEFAULT: "0.125rem", lg: "0.25rem", xl: "0.5rem", full: "0.75rem" }, spacing: { "margin-mobile": "16px", unit: "4px", gutter: "16px", "margin-desktop": "40px", "container-max": "1440px" }, fontFamily: { "body-md": ["Manrope"], "label-caps": ["Manrope"], "display-lg": ["Noto Serif"], "body-lg": ["Manrope"], "headline-md-mobile": ["Noto Serif"], "headline-sm": ["Noto Serif"], "headline-md": ["Noto Serif"], headline: ["Noto Serif"], display: ["Noto Serif"], body: ["Manrope"], label: ["Manrope"] }, fontSize: { "body-md": ["14px", { lineHeight: "20px", fontWeight: "400" }], "label-caps": ["12px", { lineHeight: "16px", letterSpacing: "0.08em", fontWeight: "700" }], "display-lg": ["40px", { lineHeight: "48px", letterSpacing: "-0.02em", fontWeight: "700" }], "body-lg": ["16px", { lineHeight: "24px", fontWeight: "400" }], "headline-md-mobile": ["20px", { lineHeight: "28px", fontWeight: "600" }], "headline-sm": ["20px", { lineHeight: "28px", fontWeight: "600" }], "headline-md": ["24px", { lineHeight: "32px", fontWeight: "600" }] } } } };</script>
+  <style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  <style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  <style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+
+<body class="bg-surface text-on-surface font-body-md no-scrollbar overflow-x-hidden min-h-screen">
+  <!-- TopAppBar -->
+  <header
+    class="fixed top-0 left-0 w-full z-50 flex items-center justify-between px-margin-mobile h-14 bg-surface border-b border-outline-variant shadow-none">
+    <div class="flex items-center gap-4">
+      <button
+        class="hover:bg-surface-variant transition-colors p-2 rounded-full active:opacity-70 active:scale-95 transition-all">
+        <span class="material-symbols-outlined text-primary" data-icon="menu">menu</span>
+      </button>
+      <h1 class="font-headline-md-mobile text-headline-md-mobile text-primary tracking-tight">Saaj Creation</h1>
+    </div>
+    <button
+      class="hover:bg-surface-variant transition-colors p-2 rounded-full active:opacity-70 active:scale-95 transition-all">
+      <span class="material-symbols-outlined text-primary" data-icon="account_circle">account_circle</span>
+    </button>
+  </header>
+  <!-- Main Content Canvas -->
+  <main class="pt-20 pb-32 px-margin-mobile max-w-lg mx-auto flex flex-col gap-8">
+    <!-- Hero Header -->
+    <header>
+      <span class="font-label-caps text-label-caps text-on-tertiary-container uppercase">Operational Suite</span>
+      <h2 class="font-headline-md text-headline-md text-primary mt-1">Data Entry</h2>
+    </header>
+    <!-- Entry Form -->
+    <form class="flex flex-col gap-6" id="salesForm">
+      <!-- Main Entry Card -->
+      <div class="bg-surface-container-lowest p-5 rounded-xl border border-outline-variant flex flex-col gap-5">
+        <div class="flex items-center gap-2 mb-1">
+          <span class="material-symbols-outlined text-secondary" data-icon="edit_note">edit_note</span>
+          <h3 class="font-headline-sm text-headline-sm text-primary">Transaction Details</h3>
+        </div>
+        <!-- Date & ID -->
+        <div class="grid grid-cols-2 gap-4">
+          <div class="flex flex-col gap-1">
+            <label class="font-label-caps text-label-caps text-on-surface-variant">DATE</label>
+            <input
+              class="bg-surface border border-outline rounded-lg px-4 py-3 focus:outline-none focus:border-secondary-container transition-colors text-body-lg font-body-lg w-full"
+              id="entryDate" type="date" />
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="font-label-caps text-label-caps text-on-surface-variant">ID</label>
+            <input
+              class="bg-surface-variant/30 border border-outline rounded-lg px-4 py-3 text-on-surface-variant text-body-lg font-body-lg w-full"
+              placeholder="SC0782" readonly="" type="text" />
+          </div>
+        </div>
+        <!-- Customer Info -->
+        <div class="flex flex-col gap-1">
+          <label class="font-label-caps text-label-caps text-on-surface-variant">CUSTOMER NAME</label>
+          <input
+            class="bg-surface border border-outline rounded-lg px-4 py-3 focus:outline-none focus:border-secondary-container transition-colors text-body-lg font-body-lg"
+            placeholder="Enter name" type="text" />
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="font-label-caps text-label-caps text-on-surface-variant">CONTACT NO</label>
+          <div class="relative">
+            <input
+              class="w-full bg-surface border border-outline rounded-lg px-4 py-3 focus:outline-none focus:border-secondary-container transition-colors text-body-lg font-body-lg"
+              placeholder="+1 (000) 000-0000" type="tel" />
+            <span class="material-symbols-outlined absolute right-3 top-3.5 text-outline text-body-md"
+              data-icon="call">call</span>
+          </div>
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="font-label-caps text-label-caps text-on-surface-variant">ADDRESS</label>
+          <textarea
+            class="bg-surface border border-outline rounded-lg px-4 py-3 focus:outline-none focus:border-secondary-container transition-colors text-body-lg font-body-lg resize-none"
+            placeholder="Delivery address..." rows="2"></textarea>
+        </div>
+        <!-- Product Dropdown -->
+        <div class="flex flex-col gap-1">
+          <label class="font-label-caps text-label-caps text-on-surface-variant">PRODUCT</label>
+          <select
+            class="bg-surface border border-outline rounded-lg px-4 py-3 focus:outline-none focus:border-secondary-container transition-colors text-body-lg font-body-lg appearance-none">
+            <option disabled="" selected="">Select a product...</option>
+            <option>Diamond Necklace</option>
+            <option>Gold Ring</option>
+            <option>Silver Bracelet</option>
+            <option>Custom Pendant</option>
+          </select>
+        </div>
+        <!-- Radio Status Group -->
+        <div class="flex flex-col gap-4 pt-2">
+          <div
+            class="flex items-center justify-between bg-surface-container-low p-3 rounded-lg border border-outline-variant">
+            <span class="font-label-caps text-label-caps text-primary">PAYMENT</span>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <span class="text-body-md font-bold text-on-surface-variant">Done</span>
+              <input class="w-5 h-5 text-secondary border-outline focus:ring-secondary rounded-full"
+                name="paymentStatus" type="radio" value="done" />
+            </label>
+          </div>
+          <div
+            class="flex items-center justify-between bg-surface-container-low p-3 rounded-lg border border-outline-variant">
+            <span class="font-label-caps text-label-caps text-primary">SENT COURIER</span>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <span class="text-body-md font-bold text-on-surface-variant">Done</span>
+              <input class="w-5 h-5 text-secondary border-outline focus:ring-secondary rounded-full"
+                name="courierStatus" type="radio" value="done" />
+            </label>
+          </div>
+          <div
+            class="flex items-center justify-between bg-surface-container-low p-3 rounded-lg border border-outline-variant">
+            <span class="font-label-caps text-label-caps text-primary">ORDER RECEIVED</span>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <span class="text-body-md font-bold text-on-surface-variant">Done</span>
+              <input class="w-5 h-5 text-secondary border-outline focus:ring-secondary rounded-full" name="orderStatus"
+                type="radio" value="done" />
+            </label>
+          </div>
+        </div>
+      </div>
+      <!-- Action Button -->
+      <button
+        class="w-full bg-primary text-on-primary h-14 rounded-lg flex items-center justify-center gap-2 active:scale-[0.98] transition-transform shadow-md mt-2"
+        type="submit">
+        <span class="material-symbols-outlined" data-icon="save">save</span>
+        <span class="font-body-lg font-bold">Save Data Entry</span>
+      </button>
+    </form>
+  </main>
+  <!-- BottomNavBar -->
+  <nav
+    class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center bg-surface border-t border-outline-variant px-unit pb-2 pt-2 shadow-sm">
+    <a class="flex flex-col items-center justify-center text-primary bg-secondary-container rounded-full px-4 py-1 tap-scale-90 transition-transform duration-150"
+      href="#">
+      <span class="material-symbols-outlined" data-icon="edit_note"
+        style="font-variation-settings: 'FILL' 1;">edit_note</span>
+      <span class="text-label-caps font-label-caps">Entry</span>
+    </a>
+    <a class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1 hover:text-primary transition-colors"
+      href="#">
+      <span class="material-symbols-outlined" data-icon="payments">payments</span>
+      <span class="text-label-caps font-label-caps">Sales</span>
+    </a>
+    <a class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1 hover:text-primary transition-colors"
+      href="#">
+      <span class="material-symbols-outlined" data-icon="diamond">diamond</span>
+      <span class="text-label-caps font-label-caps">Inventory</span>
+    </a>
+    <a class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1 hover:text-primary transition-colors"
+      href="#">
+      <span class="material-symbols-outlined" data-icon="settings">settings</span>
+      <span class="text-label-caps font-label-caps">Settings</span>
+    </a>
+  </nav>
+  <script>
+    // Set default date to today
+    window.onload = () => {
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('entryDate').value = today;
+    };
+
+    // Form submission interaction
+    document.getElementById('salesForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      alert('Entry saved to Saaj Creation Database.');
+    });
+  </script>
+</body>
+
+</html>

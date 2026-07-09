@@ -1,0 +1,17 @@
+ow to start it yourself in the future:
+If you close your terminal, restart your computer, or want to start the application yourself, follow these steps:
+
+Open your terminal (PowerShell or Command Prompt).
+Navigate to your project directory:
+powershell
+cd "D:\Siddhesh\Learning\AI\SaajDataEntry"
+
+
+
+cd "D:\Siddhesh\Learning\AI\SaajDataEntry"
+Start the local development server:
+npm run dev
+
+
+npm run dev
+Open your web browser and go to: http://localhost:5173/
