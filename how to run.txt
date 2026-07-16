@@ -15,3 +15,16 @@ npm run dev
 
 npm run dev
 Open your web browser and go to: http://localhost:5173/
+------------------------
+
+
+
+Deployment Details:
+Hosting URL: https://saajcreation-app.web.app
+https://saajcreation-app.web.app/
+
+Firebase Project ID: saajcreation-app
+Firebase Console: Firebase Console Project Page
+https://console.firebase.google.com/project/saajcreation-app/overview
+
+

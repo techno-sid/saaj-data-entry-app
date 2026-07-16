@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import EntryForm from './components/EntryForm';
 import SalesList from './components/SalesList';
+import PrintLabels from './components/PrintLabels';
 import InventoryList from './components/InventoryList';
 import SettingsPanel from './components/SettingsPanel';
 
@@ -233,6 +234,12 @@ function App() {
           />
         )}
 
+        {activeTab === 'print' && (
+          <PrintLabels
+            showToast={showToast}
+          />
+        )}
+
         {activeTab === 'inventory' && (
           <InventoryList
             inventory={inventory}
@@ -295,6 +302,19 @@ function App() {
             payments
           </span>
           <span className="text-label-caps font-label-caps text-[10px]">Sales</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('print')}
+          className={`flex flex-col items-center justify-center px-4 py-1.5 transition-all duration-150 rounded-full ${activeTab === 'print'
+              ? 'text-primary bg-secondary-container font-bold'
+              : 'text-on-surface-variant hover:text-primary'
+            }`}
+        >
+          <span className="material-symbols-outlined" style={{ fontVariationSettings: activeTab === 'print' ? "'FILL' 1" : "'FILL' 0" }}>
+            print
+          </span>
+          <span className="text-label-caps font-label-caps text-[10px]">Print</span>
         </button>
 
         <button
