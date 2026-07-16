@@ -68,21 +68,6 @@ function EntryForm({ sales, setSales, inventory, setInventory, settings, showToa
       return;
     }
 
-    // Check stock
-    if (selectedProduct.stock <= 0) {
-      showToast(`${selectedProduct.name} is out of stock!`, 'warning');
-      return;
-    }
-
-    // Decrement stock
-    const updatedInventory = inventory.map(item => {
-      if (item.id === selectedProduct.id) {
-        return { ...item, stock: item.stock - 1 };
-      }
-      return item;
-    });
-    setInventory(updatedInventory);
-
     // Add new sale
     const newSale = {
       id,
@@ -210,8 +195,8 @@ function EntryForm({ sales, setSales, inventory, setInventory, settings, showToa
               >
                 <option value="" disabled>Select a product...</option>
                 {inventory.map(item => (
-                  <option key={item.id} value={item.id} disabled={item.stock <= 0}>
-                    {item.name} ({settings.currency}{item.price}) {item.stock <= 0 ? '- OUT OF STOCK' : `[Stock: ${item.stock}]`}
+                  <option key={item.id} value={item.id}>
+                    {item.name} ({settings.currency}{item.price})
                   </option>
                 ))}
               </select>

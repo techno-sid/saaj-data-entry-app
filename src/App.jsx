@@ -162,6 +162,33 @@ function App() {
     return false;
   };
 
+  const syncAllInventoryToGoogleSheet = async (currentInventory) => {
+    if (!settings.googleSheetsUrl) return false;
+    const listToSync = currentInventory || inventory;
+    try {
+      await fetch(settings.googleSheetsUrl, {
+        method: 'POST',
+        mode: 'no-cors', // Bypass CORS redirect block
+        headers: {
+          'Content-Type': 'text/plain',
+        },
+        body: JSON.stringify({
+          type: 'inventory_sync',
+          items: listToSync.map(item => ({
+            id: item.id,
+            sku: item.sku,
+            name: item.name,
+            price: item.price
+          }))
+        }),
+      });
+      return true;
+    } catch (error) {
+      console.error('Error syncing inventory to Google Sheet:', error);
+    }
+    return false;
+  };
+
   // Toast Notification component
   const Toast = () => {
     if (!toast) return null;
@@ -249,6 +276,7 @@ function App() {
             }}
             settings={settings}
             showToast={showToast}
+            syncAllInventoryToGoogleSheet={syncAllInventoryToGoogleSheet}
           />
         )}
 

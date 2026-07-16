@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-function InventoryList({ inventory, setInventory, settings, showToast }) {
+function InventoryList({ inventory, setInventory, settings, showToast, syncAllInventoryToGoogleSheet }) {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   
@@ -8,13 +8,11 @@ function InventoryList({ inventory, setInventory, settings, showToast }) {
   const [name, setName] = useState('');
   const [sku, setSku] = useState('');
   const [price, setPrice] = useState('');
-  const [stock, setStock] = useState('');
 
   const openAddForm = () => {
     setName('');
     setSku('');
     setPrice('');
-    setStock('');
     setEditingItem(null);
     setIsFormOpen(true);
   };
@@ -24,7 +22,6 @@ function InventoryList({ inventory, setInventory, settings, showToast }) {
     setName(item.name);
     setSku(item.sku);
     setPrice(item.price.toString());
-    setStock(item.stock.toString());
     setIsFormOpen(true);
   };
 
@@ -41,14 +38,9 @@ function InventoryList({ inventory, setInventory, settings, showToast }) {
     }
 
     const priceNum = parseFloat(price);
-    const stockNum = parseInt(stock, 10);
 
     if (isNaN(priceNum) || priceNum < 0) {
       showToast('Please enter a valid price.', 'warning');
-      return;
-    }
-    if (isNaN(stockNum) || stockNum < 0) {
-      showToast('Please enter a valid stock level.', 'warning');
       return;
     }
 
@@ -65,20 +57,24 @@ function InventoryList({ inventory, setInventory, settings, showToast }) {
 
     if (editingItem) {
       // Edit mode
-      const updated = inventory.map(item => {
-        if (item.id === editingItem.id) {
-          return {
-            ...item,
-            name: name.trim(),
-            sku: sku.trim().toUpperCase(),
-            price: priceNum,
-            stock: stockNum
-          };
-        }
-        return item;
-      });
+      const updatedItem = {
+        ...editingItem,
+        name: name.trim(),
+        sku: sku.trim().toUpperCase(),
+        price: priceNum,
+        stock: 0 // Default to 0 internally to maintain database schema
+      };
+      
+      const updated = inventory.map(item => 
+        item.id === editingItem.id ? updatedItem : item
+      );
+      
       setInventory(updated);
       showToast(`Product ${name} updated successfully.`);
+      
+      if (settings.googleSheetsUrl && syncAllInventoryToGoogleSheet) {
+        syncAllInventoryToGoogleSheet(updated);
+      }
     } else {
       // Add mode
       const newProduct = {
@@ -86,10 +82,16 @@ function InventoryList({ inventory, setInventory, settings, showToast }) {
         name: name.trim(),
         sku: sku.trim().toUpperCase(),
         price: priceNum,
-        stock: stockNum
+        stock: 0 // Default to 0 internally
       };
-      setInventory([...inventory, newProduct]);
+      
+      const updated = [...inventory, newProduct];
+      setInventory(updated);
       showToast(`Product ${name} added to inventory.`);
+      
+      if (settings.googleSheetsUrl && syncAllInventoryToGoogleSheet) {
+        syncAllInventoryToGoogleSheet(updated);
+      }
     }
 
     setIsFormOpen(false);
@@ -100,31 +102,14 @@ function InventoryList({ inventory, setInventory, settings, showToast }) {
       const updated = inventory.filter(item => item.id !== itemId);
       setInventory(updated);
       showToast(`Product ${itemName} removed.`, 'warning');
+      
+      if (settings.googleSheetsUrl && syncAllInventoryToGoogleSheet) {
+        syncAllInventoryToGoogleSheet(updated);
+      }
     }
   };
 
-  // Helper for stock badge
-  const renderStockBadge = (stockLevel) => {
-    if (stockLevel === 0) {
-      return (
-        <span className="px-2 py-0.5 rounded text-[10px] font-bold font-label-caps bg-[#ffdad6] text-[#ba1a1a] uppercase">
-          Out of Stock
-        </span>
-      );
-    } else if (stockLevel <= 5) {
-      return (
-        <span className="px-2 py-0.5 rounded text-[10px] font-bold font-label-caps bg-[#ffdea5] text-[#785a1a] uppercase">
-          Low Stock ({stockLevel})
-        </span>
-      );
-    } else {
-      return (
-        <span className="px-2 py-0.5 rounded text-[10px] font-bold font-label-caps bg-[#d1e7dd] text-[#0f5132] uppercase">
-          In Stock ({stockLevel})
-        </span>
-      );
-    }
-  };
+  // Stock badge removed
 
   return (
     <div className="flex flex-col gap-6 w-full animate-fadeIn max-w-4xl mx-auto">
@@ -161,7 +146,6 @@ function InventoryList({ inventory, setInventory, settings, showToast }) {
                     <th className="font-label-caps text-label-caps text-on-surface-variant p-4">SKU</th>
                     <th className="font-label-caps text-label-caps text-on-surface-variant p-4">Product Name</th>
                     <th className="font-label-caps text-label-caps text-on-surface-variant p-4 text-right">Unit Price</th>
-                    <th className="font-label-caps text-label-caps text-on-surface-variant p-4 text-center">Stock Level</th>
                     <th className="font-label-caps text-label-caps text-on-surface-variant p-4 text-center">Actions</th>
                   </tr>
                 </thead>
@@ -176,7 +160,6 @@ function InventoryList({ inventory, setInventory, settings, showToast }) {
                       <td className="p-4 font-bold text-right text-primary">
                         {settings.currency}{Number(item.price).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </td>
-                      <td className="p-4 text-center">{renderStockBadge(item.stock)}</td>
                       <td className="p-4 text-center">
                         <div className="flex items-center justify-center gap-2">
                           <button
@@ -210,7 +193,6 @@ function InventoryList({ inventory, setInventory, settings, showToast }) {
                 >
                   <div className="flex justify-between items-center border-b border-outline-variant pb-2">
                     <span className="font-bold text-primary text-body-lg">{item.sku}</span>
-                    {renderStockBadge(item.stock)}
                   </div>
 
                   <div className="flex justify-between items-end">
@@ -299,32 +281,18 @@ function InventoryList({ inventory, setInventory, settings, showToast }) {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex flex-col gap-1">
-                  <label className="font-label-caps text-label-caps text-on-surface-variant">PRICE ({settings.currency})</label>
-                  <input
-                    className="bg-surface border border-outline rounded-lg px-4 py-2.5 focus:outline-none focus:border-secondary transition-colors text-body-lg font-body"
-                    placeholder="0.00"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={price}
-                    onChange={(e) => setPrice(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="flex flex-col gap-1">
-                  <label className="font-label-caps text-label-caps text-on-surface-variant">INITIAL STOCK</label>
-                  <input
-                    className="bg-surface border border-outline rounded-lg px-4 py-2.5 focus:outline-none focus:border-secondary transition-colors text-body-lg font-body"
-                    placeholder="0"
-                    type="number"
-                    min="0"
-                    value={stock}
-                    onChange={(e) => setStock(e.target.value)}
-                    required
-                  />
-                </div>
+              <div className="flex flex-col gap-1">
+                <label className="font-label-caps text-label-caps text-on-surface-variant">PRICE ({settings.currency})</label>
+                <input
+                  className="bg-surface border border-outline rounded-lg px-4 py-2.5 focus:outline-none focus:border-secondary transition-colors text-body-lg font-body"
+                  placeholder="0.00"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={price}
+                  onChange={(e) => setPrice(e.target.value)}
+                  required
+                />
               </div>
             </div>
 
