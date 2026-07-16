@@ -39,7 +39,17 @@ function PrintLabels({ showToast }) {
   };
 
   const handlePrint = () => {
+    const originalTitle = document.title;
+    const now = new Date();
+    const pad = (num) => String(num).padStart(2, '0');
+    const timestamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+    
+    document.title = `Saaj_Creation_Address_Labels_${timestamp}`;
     window.print();
+    
+    setTimeout(() => {
+      document.title = originalTitle;
+    }, 1000);
   };
 
   // Helper to split address into exactly 5 lines for the printed label table
