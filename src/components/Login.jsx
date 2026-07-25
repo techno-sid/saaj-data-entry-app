@@ -28,12 +28,12 @@ function Login({ onLoginSuccess, settings }) {
     <div className="min-h-screen w-screen flex flex-col items-center justify-center bg-surface px-4 animate-fadeIn">
       {/* Login Card */}
       <div className="max-w-md w-full bg-surface-container-lowest p-8 rounded-xl border border-outline-variant shadow-lg flex flex-col gap-6">
-        
+
         {/* Header/Logo */}
         <div className="flex flex-col items-center gap-3 text-center">
-          <img 
-            src="/logo.png" 
-            alt="Saaj Creation Logo" 
+          <img
+            src="/logo.png"
+            alt="Saaj Creation Logo"
             className="h-20 w-20 rounded-full object-cover border border-outline-variant shadow-md"
             onError={(e) => {
               // Fallback if logo.png doesn't exist
@@ -45,7 +45,7 @@ function Login({ onLoginSuccess, settings }) {
               {settings.businessName || 'Saaj Creation'}
             </h2>
             <p className="font-body-md text-on-surface-variant text-xs">
-              Sign in to manage sales, inventory and database.
+              Trust Purity Innovation
             </p>
           </div>
         </div>

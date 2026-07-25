@@ -46,7 +46,7 @@ function doPost(e) {
                 'net profit',
                 data.contactNo,
                 data.address,
-                'Pincode'
+                data.pincode || 'N/A'
             ]);
             return ContentService.createTextOutput("success");
         }

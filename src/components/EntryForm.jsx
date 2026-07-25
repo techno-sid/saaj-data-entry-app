@@ -2,7 +2,13 @@ import React, { useState, useEffect } from 'react';
 
 const callGeminiAutofill = async (text) => {
   const apiKey = "AQ.Ab8RN6JkJuvpWUFDKEkJQK1ZwFpe8s9yAoGN2vKYpHadW4j8Ew";
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${apiKey}`;
+  
+  const models = [
+    'gemini-3.5-flash',
+    'gemini-3.6-flash',
+    'gemini-3.5-flash-lite',
+    'gemini-2.5-flash'
+  ];
 
   const prompt = `
 You are an expert data parsing assistant. Extract the contact details from the following raw text and structure it as JSON.
@@ -19,33 +25,49 @@ ${text}
 Format the output strictly as a JSON object with keys: "customerName", "contactNo", "address", "pincode". Do not output markdown, backticks, or any other description. Output only raw JSON.
   `;
 
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      contents: [{
-        parts: [{ text: prompt }]
-      }],
-      generationConfig: {
-        responseMimeType: "application/json"
+  let lastError = null;
+  for (const model of models) {
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{ text: prompt }]
+          }],
+          generationConfig: {
+            responseMimeType: "application/json"
+          }
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!responseText) {
+          throw new Error('Empty response from Gemini');
+        }
+
+        let cleanText = responseText.trim();
+        if (cleanText.startsWith('```')) {
+          cleanText = cleanText.replace(/^```(?:json)?\n?/i, '').replace(/\n?```$/i, '').trim();
+        }
+
+        return JSON.parse(cleanText);
+      } else {
+        lastError = new Error(`Model ${model} returned status: ${response.status}`);
+        console.warn(`Gemini model ${model} failed (status ${response.status}). Trying fallback.`);
       }
-    })
-  });
-
-  if (!response.ok) {
-    throw new Error(`HTTP error! Status: ${response.status}`);
+    } catch (err) {
+      lastError = err;
+      console.warn(`Fetch error for model ${model}. Trying fallback.`, err);
+    }
   }
 
-  const data = await response.json();
-  const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-  
-  if (!responseText) {
-    throw new Error('Empty response from Gemini');
-  }
-
-  return JSON.parse(responseText.trim());
+  throw lastError || new Error('All Gemini model fallbacks failed.');
 };
 
 function EntryForm({ sales, setSales, inventory, setInventory, settings, showToast, syncSaleToGoogleSheet }) {

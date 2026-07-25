@@ -1,5 +1,75 @@
 import React, { useState } from 'react';
 
+const callGeminiAutofill = async (text) => {
+  const apiKey = "AQ.Ab8RN6JkJuvpWUFDKEkJQK1ZwFpe8s9yAoGN2vKYpHadW4j8Ew";
+  
+  const models = [
+    'gemini-3.5-flash',
+    'gemini-3.6-flash',
+    'gemini-3.5-flash-lite',
+    'gemini-2.5-flash'
+  ];
+
+  const prompt = `
+You are an expert data parsing assistant. Extract the contact details from the following raw text and structure it as JSON.
+- "customerName": Clean name of the person/customer (exclude phone numbers, pincodes, or address terms).
+- "contactNo": Mapped phone/mobile number (digits only or standard + country code format, e.g., 9372889289).
+- "address": The complete delivery address exactly as written in the text (including street, nearby landmarks, district, building name, flat number, society, etc.), excluding only the pincode/zipcode. Do not summarize, shorten, or omit any qualifiers or words in this field.
+- "pincode": The 6-digit or postal pincode.
+
+Text to parse:
+"""
+${text}
+"""
+
+Format the output strictly as a JSON object with keys: "customerName", "contactNo", "address", "pincode". Do not output markdown, backticks, or any other description. Output only raw JSON.
+  `;
+
+  let lastError = null;
+  for (const model of models) {
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{ text: prompt }]
+          }],
+          generationConfig: {
+            responseMimeType: "application/json"
+          }
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!responseText) {
+          throw new Error('Empty response from Gemini');
+        }
+
+        let cleanText = responseText.trim();
+        if (cleanText.startsWith('```')) {
+          cleanText = cleanText.replace(/^```(?:json)?\n?/i, '').replace(/\n?```$/i, '').trim();
+        }
+
+        return JSON.parse(cleanText);
+      } else {
+        lastError = new Error(`Model ${model} returned status: ${response.status}`);
+        console.warn(`Gemini model ${model} failed (status ${response.status}). Trying fallback.`);
+      }
+    } catch (err) {
+      lastError = err;
+      console.warn(`Fetch error for model ${model}. Trying fallback.`, err);
+    }
+  }
+
+  throw lastError || new Error('All Gemini model fallbacks failed.');
+};
+
 const SENDER_DETAILS = {
   name: 'Saaj Creation and Jewellery',
   address: 'A-504, Delta Tower 1, Sec-8, Ulwe, Navi Mumbai 410206',
@@ -10,6 +80,42 @@ function PrintLabels({ showToast }) {
   const [recipients, setRecipients] = useState([
     { name: '', mobile: '', address: '', pincode: '' }
   ]);
+  const [autofillIndex, setAutofillIndex] = useState(null);
+  const [autofillText, setAutofillText] = useState('');
+  const [isAutofilling, setIsAutofilling] = useState(false);
+
+  const handleAutofillSubmit = async (index) => {
+    if (!autofillText.trim()) {
+      showToast('Please enter some text to autofill.', 'warning');
+      return;
+    }
+
+    setIsAutofilling(true);
+    showToast('AI is parsing details...');
+
+    try {
+      const result = await callGeminiAutofill(autofillText);
+      if (result) {
+        const updated = [...recipients];
+        if (result.customerName) updated[index].name = result.customerName;
+        if (result.contactNo) updated[index].mobile = result.contactNo;
+        if (result.address) updated[index].address = result.address;
+        if (result.pincode) updated[index].pincode = result.pincode;
+        
+        setRecipients(updated);
+        showToast('Recipient autofilled successfully!');
+        setAutofillIndex(null);
+        setAutofillText('');
+      } else {
+        showToast('AI was unable to extract details. Please check text or try again.', 'warning');
+      }
+    } catch (err) {
+      console.error(err);
+      showToast('Autofill failed. Check internet connection or API Key.', 'warning');
+    } finally {
+      setIsAutofilling(false);
+    }
+  };
 
   const handleAddRecipient = () => {
     if (recipients.length >= 4) {
@@ -39,17 +145,196 @@ function PrintLabels({ showToast }) {
   };
 
   const handlePrint = () => {
-    const originalTitle = document.title;
     const now = new Date();
     const pad = (num) => String(num).padStart(2, '0');
     const timestamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
-    
-    document.title = `Saaj_Creation_Address_Labels_${timestamp}`;
-    window.print();
-    
-    setTimeout(() => {
-      document.title = originalTitle;
-    }, 1000);
+    const docTitle = `Saaj_Creation_Address_Labels_${timestamp}`;
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      showToast('Popup blocker blocked the print tab. Please allow popups for this site.', 'warning');
+      return;
+    }
+
+    // Generate HTML for the printable cards
+    const labelsHTML = paddedRecipients.map((recipient, index) => {
+      const addressLines = getAddressLines(recipient.address);
+      return `
+        <div class="print-label-card">
+          <table class="label-table">
+            <thead>
+              <tr>
+                <th colspan="2" class="print-brand-header">
+                  Saaj Creation And Jewellery
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="col-label">To : Name</td>
+                <td class="col-val val-bold">${recipient.name || ''}</td>
+              </tr>
+              <tr>
+                <td class="col-label">Address</td>
+                <td class="col-val">${addressLines[0]}</td>
+              </tr>
+              <tr>
+                <td class="col-label"></td>
+                <td class="col-val">${addressLines[1]}</td>
+              </tr>
+              <tr>
+                <td class="col-label"></td>
+                <td class="col-val">${addressLines[2]}</td>
+              </tr>
+              <tr>
+                <td class="col-label"></td>
+                <td class="col-val">${addressLines[3]}</td>
+              </tr>
+              <tr>
+                <td class="col-label"></td>
+                <td class="col-val">${addressLines[4]}</td>
+              </tr>
+              <tr>
+                <td class="col-label">PinCode</td>
+                <td class="col-val val-bold">${recipient.pincode || ''}</td>
+              </tr>
+              <tr>
+                <td class="col-label">Mobile</td>
+                <td class="col-val val-bold">${recipient.mobile || ''}</td>
+              </tr>
+              <tr>
+                <td class="col-label">From :</td>
+                <td class="col-val val-bold">${SENDER_DETAILS.name}</td>
+              </tr>
+              <tr>
+                <td class="col-label"></td>
+                <td class="col-val val-small">${SENDER_DETAILS.address}</td>
+              </tr>
+              <tr>
+                <td class="col-label"></td>
+                <td class="col-val val-bold">${SENDER_DETAILS.mobile}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      `;
+    }).join('');
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>${docTitle}</title>
+        <link href="https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@1,700&display=swap" rel="stylesheet">
+        <style>
+          body {
+            margin: 0;
+            padding: 0;
+            background: white;
+            font-family: Arial, Helvetica, sans-serif;
+            box-sizing: border-box;
+          }
+          
+          .print-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            gap: 6mm;
+            width: 297mm;
+            height: 210mm;
+            padding: 8mm;
+            box-sizing: border-box;
+            background: white;
+          }
+          
+          .print-label-card {
+            width: 100%;
+            height: 100%;
+            box-sizing: border-box;
+            background: white;
+          }
+          
+          .label-table {
+            width: 100%;
+            height: 100%;
+            border-collapse: collapse;
+            border: 2px solid black;
+            background: white;
+          }
+          
+          .print-brand-header {
+            border-bottom: 2px solid black;
+            text-align: center;
+            padding: 6px 0;
+            font-family: 'Noto Serif', Georgia, serif;
+            font-style: italic;
+            font-size: 18px;
+            letter-spacing: 0.03em;
+            font-weight: 700;
+          }
+          
+          td {
+            border-bottom: 1px solid black;
+            padding: 2px 12px;
+            vertical-align: middle;
+            line-height: 1.25;
+            font-size: 13px;
+          }
+          
+          .col-label {
+            border-right: 1px solid black;
+            font-weight: bold;
+            font-size: 11px;
+            width: 18%;
+          }
+          
+          .col-val {
+            font-size: 13px;
+          }
+          
+          .val-bold {
+            font-weight: bold;
+          }
+          
+          .val-small {
+            font-size: 10px;
+            line-height: 1.1;
+          }
+          
+          tr:last-child td {
+            border-bottom: none;
+          }
+          
+          @page {
+            size: A4 landscape;
+            margin: 0;
+          }
+          
+          @media print {
+            body {
+              background: white;
+            }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="print-container">
+          ${labelsHTML}
+        </div>
+        <script>
+          window.onload = function() {
+            setTimeout(function() {
+              window.print();
+            }, 300);
+          };
+        </script>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.open();
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
   };
 
   // Helper to split address into exactly 5 lines for the printed label table
@@ -178,6 +463,24 @@ function PrintLabels({ showToast }) {
                   <h3 className="font-headline-sm text-lg font-bold text-primary">Shipping Details</h3>
                 </div>
                 <div className="flex items-center gap-2">
+                  {/* Magic Button */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (autofillIndex === index) {
+                        setAutofillIndex(null);
+                        setAutofillText('');
+                      } else {
+                        setAutofillIndex(index);
+                        setAutofillText('');
+                      }
+                    }}
+                    className="flex items-center gap-1.5 py-1 px-3 rounded-full border border-secondary/30 bg-secondary-container/15 text-secondary hover:bg-secondary-container/30 transition-all font-bold text-[10px] font-label-caps tracking-wider cursor-pointer active:scale-95 shadow-sm"
+                  >
+                    <span className="material-symbols-outlined text-xs font-bold">auto_awesome</span>
+                    <span>{autofillIndex === index ? 'Close AI' : 'AI Fill'}</span>
+                  </button>
+
                   {recipients.length > 1 && (
                     <button
                       type="button"
@@ -193,6 +496,52 @@ function PrintLabels({ showToast }) {
                   </span>
                 </div>
               </div>
+
+              {/* AI Autofill Panel */}
+              {autofillIndex === index && (
+                <div className="bg-surface-container-low p-4 rounded-xl border border-secondary/20 flex flex-col gap-3 animate-fadeIn shadow-inner mt-1">
+                  <span className="font-label-caps text-label-caps text-secondary font-bold text-[10px]">Paste Raw Customer Details</span>
+                  <textarea
+                    className="bg-surface border border-outline rounded-lg px-3 py-2.5 focus:outline-none focus:border-secondary transition-colors text-body-md font-body resize-none w-full"
+                    placeholder="Example: Siddhesh Divekar 9372889289 Delta Tower 1,Ulwe ,Navi Mumbai 410206"
+                    rows="3"
+                    value={autofillText}
+                    onChange={(e) => setAutofillText(e.target.value)}
+                    disabled={isAutofilling}
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleAutofillSubmit(index)}
+                      disabled={isAutofilling}
+                      className="bg-secondary text-white px-4 py-2 rounded-lg font-bold text-[10px] font-label-caps tracking-wider cursor-pointer hover:opacity-90 active:scale-95 transition-all flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isAutofilling ? (
+                        <>
+                          <span className="material-symbols-outlined text-xs animate-spin">progress_activity</span>
+                          Parsing...
+                        </>
+                      ) : (
+                        <>
+                          <span className="material-symbols-outlined text-xs">auto_awesome</span>
+                          Autofill Form
+                        </>
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAutofillIndex(null);
+                        setAutofillText('');
+                      }}
+                      disabled={isAutofilling}
+                      className="border border-outline-variant hover:bg-surface text-on-surface-variant px-4 py-2 rounded-lg font-bold text-[10px] font-label-caps tracking-wider cursor-pointer active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {/* Form Input Fields */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
