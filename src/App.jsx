@@ -4,6 +4,7 @@ import SalesList from './components/SalesList';
 import PrintLabels from './components/PrintLabels';
 import InventoryList from './components/InventoryList';
 import SettingsPanel from './components/SettingsPanel';
+import Login from './components/Login';
 
 // Default mock inventory
 const DEFAULT_INVENTORY = [
@@ -50,6 +51,7 @@ const DEFAULT_SETTINGS = {
 };
 
 function App() {
+  const [isLoggedIn, setIsLoggedIn] = useState(() => localStorage.getItem('saaj_logged_in') === 'true');
   const [activeTab, setActiveTab] = useState('entry');
   const [sales, setSales] = useState([]);
   const [inventory, setInventory] = useState([]);
@@ -203,6 +205,10 @@ function App() {
     );
   };
 
+  if (!isLoggedIn) {
+    return <Login onLoginSuccess={() => setIsLoggedIn(true)} settings={settings} />;
+  }
+
   return (
     <div className="bg-surface text-on-surface font-body-md no-scrollbar overflow-x-hidden min-h-screen pb-24">
       {/* TopAppBar */}
@@ -222,8 +228,17 @@ function App() {
             </h1>
           </div>
         </div>
-        <button className="hover:bg-surface-variant transition-colors p-2 rounded-full active:opacity-70 active:scale-95 transition-all">
-          <span className="material-symbols-outlined text-primary">account_circle</span>
+        <button 
+          onClick={() => {
+            if (window.confirm('Are you sure you want to log out?')) {
+              localStorage.removeItem('saaj_logged_in');
+              setIsLoggedIn(false);
+            }
+          }}
+          className="hover:bg-surface-variant transition-colors p-2 rounded-full active:opacity-70 active:scale-95 transition-all"
+          title="Log Out"
+        >
+          <span className="material-symbols-outlined text-primary">logout</span>
         </button>
       </header>
 

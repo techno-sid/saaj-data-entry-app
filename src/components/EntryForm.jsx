@@ -1,6 +1,58 @@
 import React, { useState, useEffect } from 'react';
 
+const callGeminiAutofill = async (text) => {
+  const apiKey = "AQ.Ab8RN6JkJuvpWUFDKEkJQK1ZwFpe8s9yAoGN2vKYpHadW4j8Ew";
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${apiKey}`;
+
+  const prompt = `
+You are an expert data parsing assistant. Extract the contact details from the following raw text and structure it as JSON.
+- "customerName": Clean name of the person/customer (exclude phone numbers, pincodes, or address terms).
+- "contactNo": Mapped phone/mobile number (digits only or standard + country code format, e.g., 9372889289).
+- "address": The complete delivery address exactly as written in the text (including street, nearby landmarks, district, building name, flat number, society, etc.), excluding only the pincode/zipcode. Do not summarize, shorten, or omit any qualifiers or words in this field.
+- "pincode": The 6-digit or postal pincode.
+
+Text to parse:
+"""
+${text}
+"""
+
+Format the output strictly as a JSON object with keys: "customerName", "contactNo", "address", "pincode". Do not output markdown, backticks, or any other description. Output only raw JSON.
+  `;
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      contents: [{
+        parts: [{ text: prompt }]
+      }],
+      generationConfig: {
+        responseMimeType: "application/json"
+      }
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error(`HTTP error! Status: ${response.status}`);
+  }
+
+  const data = await response.json();
+  const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+  
+  if (!responseText) {
+    throw new Error('Empty response from Gemini');
+  }
+
+  return JSON.parse(responseText.trim());
+};
+
 function EntryForm({ sales, setSales, inventory, setInventory, settings, showToast, syncSaleToGoogleSheet }) {
+  const [pincode, setPincode] = useState('');
+  const [showAutofill, setShowAutofill] = useState(false);
+  const [autofillText, setAutofillText] = useState('');
+  const [isAutofilling, setIsAutofilling] = useState(false);
   const [date, setDate] = useState('');
   const [id, setId] = useState('');
   const [customerName, setCustomerName] = useState('');
@@ -75,6 +127,7 @@ function EntryForm({ sales, setSales, inventory, setInventory, settings, showToa
       customerName: customerName.trim(),
       contactNo: contactNo.trim() || 'N/A',
       address: address.trim() || 'N/A',
+      pincode: pincode.trim() || 'N/A',
       productName: selectedProduct.name,
       price: parsedPrice,
       paymentStatus,
@@ -90,6 +143,7 @@ function EntryForm({ sales, setSales, inventory, setInventory, settings, showToa
     setCustomerName('');
     setContactNo('');
     setAddress('');
+    setPincode('');
     setProductId('');
     setPrice('');
     setPaymentStatus('pending');
@@ -104,6 +158,36 @@ function EntryForm({ sales, setSales, inventory, setInventory, settings, showToa
     }
   };
 
+  const handleAutofillSubmit = async () => {
+    if (!autofillText.trim()) {
+      showToast('Please enter some text to autofill.', 'warning');
+      return;
+    }
+
+    setIsAutofilling(true);
+    showToast('AI is parsing details...');
+
+    try {
+      const result = await callGeminiAutofill(autofillText);
+      if (result) {
+        if (result.customerName) setCustomerName(result.customerName);
+        if (result.contactNo) setContactNo(result.contactNo);
+        if (result.address) setAddress(result.address);
+        if (result.pincode) setPincode(result.pincode);
+        showToast('Form autofilled successfully!');
+        setShowAutofill(false);
+        setAutofillText('');
+      } else {
+        showToast('AI was unable to extract details. Please check text or try again.', 'warning');
+      }
+    } catch (err) {
+      console.error(err);
+      showToast('Autofill failed. Check internet connection or API Key.', 'warning');
+    } finally {
+      setIsAutofilling(false);
+    }
+  };
+
   return (
     <div className="max-w-lg mx-auto flex flex-col gap-8 w-full animate-fadeIn">
       {/* Hero Header */}
@@ -111,6 +195,63 @@ function EntryForm({ sales, setSales, inventory, setInventory, settings, showToa
         <span className="font-label-caps text-label-caps text-on-tertiary-container uppercase">Operational Suite</span>
         <h2 className="font-headline-md text-headline-md text-primary mt-1">Data Entry</h2>
       </header>
+
+      {/* AI Autofill Panel */}
+      <div className="flex flex-col gap-3">
+        <button
+          type="button"
+          onClick={() => setShowAutofill(!showAutofill)}
+          className="flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border border-secondary/30 bg-secondary-container/10 text-secondary hover:bg-secondary-container/20 transition-all font-bold text-xs font-label-caps tracking-wider cursor-pointer active:scale-[0.98] mr-auto shadow-sm"
+        >
+          <span className="material-symbols-outlined text-sm font-bold">auto_awesome</span>
+          <span>{showAutofill ? 'Close AI Autofill' : 'AI Autofill (Magic Button)'}</span>
+        </button>
+
+        {showAutofill && (
+          <div className="bg-surface-container-lowest p-4 rounded-xl border border-secondary/30 flex flex-col gap-3 animate-fadeIn shadow-md">
+            <span className="font-label-caps text-label-caps text-secondary font-bold">Paste Raw Customer Details</span>
+            <textarea
+              className="bg-surface border border-outline rounded-lg px-3 py-2.5 focus:outline-none focus:border-secondary transition-colors text-body-md font-body resize-none w-full"
+              placeholder="Example: Siddhesh Divekar 9372889289 Delta Tower 1,Ulwe ,Navi Mumbai 410206"
+              rows="3"
+              value={autofillText}
+              onChange={(e) => setAutofillText(e.target.value)}
+              disabled={isAutofilling}
+            />
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={handleAutofillSubmit}
+                disabled={isAutofilling}
+                className="bg-secondary text-white px-4 py-2 rounded-lg font-bold text-xs font-label-caps tracking-wider cursor-pointer hover:opacity-90 active:scale-95 transition-all flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isAutofilling ? (
+                  <>
+                    <span className="material-symbols-outlined text-xs animate-spin">progress_activity</span>
+                    Parsing...
+                  </>
+                ) : (
+                  <>
+                    <span className="material-symbols-outlined text-xs">auto_awesome</span>
+                    Autofill Form
+                  </>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowAutofill(false);
+                  setAutofillText('');
+                }}
+                disabled={isAutofilling}
+                className="border border-outline-variant hover:bg-surface text-on-surface-variant px-4 py-2 rounded-lg font-bold text-xs font-label-caps tracking-wider cursor-pointer active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Entry Form */}
       <form onSubmit={handleSubmit} className="flex flex-col gap-6" id="salesForm">
@@ -181,6 +322,18 @@ function EntryForm({ sales, setSales, inventory, setInventory, settings, showToa
               value={address}
               onChange={(e) => setAddress(e.target.value)}
             ></textarea>
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <label className="font-label-caps text-label-caps text-on-surface-variant">PINCODE</label>
+            <input
+              className="bg-surface border border-outline rounded-lg px-4 py-3 focus:outline-none focus:border-secondary transition-colors text-body-lg font-body-lg"
+              placeholder="e.g. 400001"
+              type="text"
+              maxLength="8"
+              value={pincode}
+              onChange={(e) => setPincode(e.target.value)}
+            />
           </div>
 
           {/* Product Dropdown */}

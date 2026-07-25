@@ -103,13 +103,14 @@ function SalesList({ sales, setSales, settings, inventory, showToast, syncSaleTo
       return;
     }
 
-    const headers = ['ID', 'Date', 'Customer Name', 'Contact No', 'Address', 'Product', 'Price', 'Payment Status', 'Courier Status', 'Order Status', 'Synced'];
+    const headers = ['ID', 'Date', 'Customer Name', 'Contact No', 'Address', 'Pincode', 'Product', 'Price', 'Payment Status', 'Courier Status', 'Order Status', 'Synced'];
     const rows = sales.map(s => [
       s.id,
       s.date,
       s.customerName,
       `"${s.contactNo}"`,
       `"${s.address.replace(/"/g, '""')}"`,
+      `"${(s.pincode || '').replace(/"/g, '""')}"`,
       s.productName,
       s.price,
       s.paymentStatus,
@@ -549,6 +550,13 @@ function SalesList({ sales, setSales, settings, inventory, showToast, syncSaleTo
                 <span className="font-label-caps text-on-surface-variant block uppercase text-[10px]">Delivery Address</span>
                 <span className="text-on-surface-variant whitespace-pre-wrap">{selectedSale.address}</span>
               </div>
+
+              {selectedSale.pincode && selectedSale.pincode !== 'N/A' && (
+                <div>
+                  <span className="font-label-caps text-on-surface-variant block uppercase text-[10px]">Pincode</span>
+                  <span className="text-on-surface-variant text-base font-semibold">{selectedSale.pincode}</span>
+                </div>
+              )}
 
               <div className="grid grid-cols-2 gap-4 border-t border-b border-outline-variant/50 py-3 my-1">
                 <div>

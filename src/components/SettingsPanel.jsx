@@ -242,7 +242,18 @@ function SettingsPanel({ settings, onUpdateSettings, onClearData, sales, invento
           Manage local backups of your sales ledger and product inventory. Backups are downloaded as local JSON files and can be restored at any time.
         </p>
 
-        <div className="grid grid-cols-2 gap-3 mt-1">
+        <div className="grid grid-cols-3 gap-3 mt-1">
+          {/* View Data */}
+          <button
+            onClick={() => window.open('https://docs.google.com/spreadsheets/d/1Lhe3DHpTdCtEgT15_ny3oMDRmpR7wRK_XC-OHYKqyZs/edit?gid=0#gid=0', '_blank', 'noopener,noreferrer')}
+            className="flex flex-col items-center justify-center p-4 border border-outline-variant hover:border-outline hover:bg-surface-container-low rounded-lg text-center cursor-pointer transition-all gap-1 group bg-surface"
+          >
+            <span className="material-symbols-outlined text-secondary text-2xl group-hover:scale-110 transition-transform">
+              table_view
+            </span>
+            <span className="font-label-caps text-[10px] text-primary uppercase font-bold mt-1">View Data</span>
+          </button>
+
           {/* Backup Database */}
           <button
             onClick={handleExportBackup}
