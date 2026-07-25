@@ -5,6 +5,7 @@ function SettingsPanel({ settings, onUpdateSettings, onClearData, sales, invento
   const [currency, setCurrency] = useState(settings.currency || '$');
   const [theme, setTheme] = useState(settings.theme || 'light');
   const [googleSheetsUrl, setGoogleSheetsUrl] = useState(settings.googleSheetsUrl || '');
+  const [aiAutofillEnabled, setAiAutofillEnabled] = useState(settings.aiAutofillEnabled !== false);
   const [isTesting, setIsTesting] = useState(false);
   const fileInputRef = useRef(null);
 
@@ -18,7 +19,8 @@ function SettingsPanel({ settings, onUpdateSettings, onClearData, sales, invento
       businessName: businessName.trim(),
       currency,
       theme,
-      googleSheetsUrl: googleSheetsUrl.trim()
+      googleSheetsUrl: googleSheetsUrl.trim(),
+      aiAutofillEnabled
     });
   };
 
@@ -108,6 +110,7 @@ function SettingsPanel({ settings, onUpdateSettings, onClearData, sales, invento
           setCurrency(importedData.settings.currency || '$');
           setTheme(importedData.settings.theme || 'light');
           setGoogleSheetsUrl(importedData.settings.googleSheetsUrl || '');
+          setAiAutofillEnabled(importedData.settings.aiAutofillEnabled !== false);
         }
 
         showToast('Database restored successfully from backup!');
@@ -193,6 +196,40 @@ function SettingsPanel({ settings, onUpdateSettings, onClearData, sales, invento
               <span className="material-symbols-outlined absolute right-3 top-3.5 text-outline pointer-events-none">
                 expand_more
               </span>
+            </div>
+          </div>
+
+          {/* AI Autofill Toggle */}
+          <div className="flex flex-col gap-1">
+            <label className="font-label-caps text-label-caps text-on-surface-variant">AUTOFILL MODE</label>
+            <div className="grid grid-cols-2 gap-3 mt-1">
+              <label className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${aiAutofillEnabled ? 'border-secondary bg-secondary-container/5' : 'border-outline hover:bg-surface-container-low'}`}>
+                <input
+                  type="radio"
+                  name="aiAutofillEnabled"
+                  checked={aiAutofillEnabled === true}
+                  onChange={() => setAiAutofillEnabled(true)}
+                  className="accent-secondary h-4 w-4"
+                />
+                <div className="flex flex-col">
+                  <span className="text-xs font-bold text-primary">AI Mode (Gemini)</span>
+                  <span className="text-[10px] text-outline">Smart parsing using API key</span>
+                </div>
+              </label>
+
+              <label className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${!aiAutofillEnabled ? 'border-secondary bg-secondary-container/5' : 'border-outline hover:bg-surface-container-low'}`}>
+                <input
+                  type="radio"
+                  name="aiAutofillEnabled"
+                  checked={aiAutofillEnabled === false}
+                  onChange={() => setAiAutofillEnabled(false)}
+                  className="accent-secondary h-4 w-4"
+                />
+                <div className="flex flex-col">
+                  <span className="text-xs font-bold text-primary">Manual Mode (Local)</span>
+                  <span className="text-[10px] text-outline">Local regex rules (no API calls)</span>
+                </div>
+              </label>
             </div>
           </div>
 

@@ -47,7 +47,8 @@ const DEFAULT_SETTINGS = {
   currency: '$',
   taxRate: 0,
   theme: 'light',
-  googleSheetsUrl: 'https://script.google.com/macros/s/AKfycbzmrxAaEUQfAiX5732PFXzcTwOi75GL43sLLMLcxgfmv5LIUhSzuYTN0NlSt6TxePRgUA/exec'
+  googleSheetsUrl: 'https://script.google.com/macros/s/AKfycbwCFHkaegpx2s-CQfSdJiDl4J24JRRU5hs3LdCdBNUF6I1EmJPAPBmjCVZPZYt6_ez6IQ/exec',
+  aiAutofillEnabled: false
 };
 
 function App() {
@@ -81,12 +82,16 @@ function App() {
     if (savedSettings) {
       const parsedSettings = JSON.parse(savedSettings);
       let updated = false;
-      if (!parsedSettings.googleSheetsUrl) {
+      if (parsedSettings.googleSheetsUrl === undefined || parsedSettings.googleSheetsUrl === 'https://script.google.com/macros/s/AKfycbzmrxAaEUQfAiX5732PFXzcTwOi75GL43sLLMLcxgfmv5LIUhSzuYTN0NlSt6TxePRgUA/exec') {
         parsedSettings.googleSheetsUrl = DEFAULT_SETTINGS.googleSheetsUrl;
         updated = true;
       }
       if (parsedSettings.businessName === 'Saaj Create') {
         parsedSettings.businessName = 'Saaj Creation';
+        updated = true;
+      }
+      if (parsedSettings.aiAutofillEnabled === undefined) {
+        parsedSettings.aiAutofillEnabled = false;
         updated = true;
       }
       if (updated) {
@@ -279,6 +284,7 @@ function App() {
         {activeTab === 'print' && (
           <PrintLabels
             showToast={showToast}
+            settings={settings}
           />
         )}
 

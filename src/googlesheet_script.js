@@ -8,6 +8,53 @@ function doPost(e) {
             return ContentService.createTextOutput("pong");
         }
 
+        // Gemini AI Autofill proxy handler
+        if (data.type === 'gemini_autofill') {
+            var apiKey = "AQ.Ab8RN6LkGftBmc60a_PcqjNNKulwMZyDpXrZdam8M9vgxmNUfA";
+            var models = ['gemini-3.5-flash', 'gemini-3.6-flash', 'gemini-3.5-flash-lite', 'gemini-2.5-flash'];
+            var prompt = 'You are an expert data parsing assistant. Extract the contact details from the following raw text and structure it as JSON.\n' +
+                '- "customerName": Clean name of the person/customer (exclude phone numbers, pincodes, or address terms).\n' +
+                '- "contactNo": Mapped phone/mobile number (digits only or standard + country code format, e.g., 9372889289).\n' +
+                '- "address": The complete delivery address exactly as written in the text (including street, nearby landmarks, district, building name, flat number, society, etc.), excluding only the pincode/zipcode. Do not summarize, shorten, or omit any qualifiers or words in this field.\n' +
+                '- "pincode": The 6-digit or postal pincode.\n\n' +
+                'Text to parse:\n"""\n' + data.text + '\n"""\n\n' +
+                'Format the output strictly as a JSON object with keys: "customerName", "contactNo", "address", "pincode". Do not output markdown, backticks, or any other description. Output only raw JSON.';
+
+            var lastError = "";
+            for (var i = 0; i < models.length; i++) {
+                try {
+                    var modelName = models[i];
+                    var url = "https://generativelanguage.googleapis.com/v1/models/" + modelName + ":generateContent?key=" + apiKey;
+                    var payload = {
+                        contents: [{
+                            parts: [{ text: prompt }]
+                        }],
+                        generationConfig: {
+                            responseMimeType: "application/json"
+                        }
+                    };
+                    var options = {
+                        method: "post",
+                        contentType: "application/json",
+                        payload: JSON.stringify(payload),
+                        muteHttpExceptions: true
+                    };
+                    var response = UrlFetchApp.fetch(url, options);
+                    var responseCode = response.getResponseCode();
+                    var responseText = response.getContentText();
+                    
+                    if (responseCode === 200) {
+                        return ContentService.createTextOutput(responseText);
+                    } else {
+                        lastError = "Model " + modelName + " failed (status " + responseCode + "): " + responseText;
+                    }
+                } catch (err) {
+                    lastError = "Fetch error for model " + models[i] + ": " + err.toString();
+                }
+            }
+            return ContentService.createTextOutput(JSON.stringify({ error: lastError }));
+        }
+
         // Inventory List Sync Handler (Writes to "Inventory" tab)
         if (data.type === 'inventory_sync') {
             var sheet = ss.getSheetByName("Inventory") || ss.insertSheet("Inventory");

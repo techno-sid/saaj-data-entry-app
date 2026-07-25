@@ -1,8 +1,197 @@
 import React, { useState } from 'react';
+const isLikelyName = (str) => {
+  if (!str) return false;
+  const cleaned = str.trim();
+  if (cleaned.length < 2 || cleaned.length > 30) return false;
 
-const callGeminiAutofill = async (text) => {
-  const apiKey = "AQ.Ab8RN6JkJuvpWUFDKEkJQK1ZwFpe8s9yAoGN2vKYpHadW4j8Ew";
-  
+  // Names usually don't have numbers
+  if (/\d/.test(cleaned)) return false;
+
+  // Names usually don't have address keywords
+  const nameWords = cleaned.toLowerCase().split(/\s+/);
+  const addressKeywords = ['flat', 'room', 'shop', 'floor', 'wing', 'building', 'bldg', 'society', 'soc', 'road', 'rd', 'street', 'st', 'lane', 'ln', 'cross', 'nagar', 'behind', 'near', 'opp', 'opposite', 'at', 'post', 'tal', 'dist', 'state', 'sector', 'sec', 'landmark', 'plot', 'house', 'hno', 'goan', 'toll', 'naka', 'near', 'by'];
+
+  for (const word of nameWords) {
+    if (addressKeywords.includes(word.replace(/[,.-]/g, ''))) {
+      return false;
+    }
+  }
+  return true;
+};
+
+const parseInputText = (text) => {
+  let temp = text.trim();
+
+  // 1. Extract Pincode (6 digits)
+  const pincodeRegex = /\b\d{6}\b/;
+  const pincodeMatch = temp.match(pincodeRegex);
+  let pincode = '';
+  if (pincodeMatch) {
+    pincode = pincodeMatch[0];
+    temp = temp.replace(pincodeMatch[0], ' ');
+  }
+
+  // 2. Extract Phone/Mobile Number (10 digits)
+  const phoneRegex = /(?:\+?91[\s-]?)?[6-9]\d{9}\b/;
+  const phoneMatch = temp.match(phoneRegex);
+  let phone = '';
+  let phoneMatchedStr = '';
+  if (phoneMatch) {
+    phoneMatchedStr = phoneMatch[0];
+    phone = phoneMatchedStr.trim();
+    temp = temp.replace(phoneMatchedStr, ' ');
+  }
+
+  let name = '';
+  let address = '';
+
+  // Determine if input is multiline
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+  if (lines.length > 1) {
+    // Multiline Parser Mode
+    let extractedName = '';
+    const addressLines = [];
+
+    for (let i = 0; i < lines.length; i++) {
+      let line = lines[i];
+
+      // Clean pincode and phone from this line first to avoid false matching
+      if (pincode && line.includes(pincode)) {
+        line = line.replace(pincode, ' ');
+      }
+      if (phoneMatchedStr && line.includes(phoneMatchedStr)) {
+        line = line.replace(phoneMatchedStr, ' ');
+      }
+
+      const labelMatch = line.match(/^(name|customer\s+name|fullname|full\s+name|cust\s+name|address|add|delivery\s+address|mob|mobile|phone|contact|tel|pincode|pin\s*code|pin|zipcode|zip)\b\s*[-:/,.]*\s*(.*)$/i);
+
+      if (labelMatch) {
+        const key = labelMatch[1].toLowerCase();
+        const val = labelMatch[2].trim();
+
+        if (key.includes('name')) {
+          extractedName = val;
+        } else if (key.includes('address') || key.includes('add')) {
+          if (val) addressLines.push(val);
+        }
+      } else {
+        // Unlabeled raw line
+        let cleanedLine = line.replace(/^[,.\s-]+|[,.\s-]+$/g, '').trim();
+        if (cleanedLine) {
+          if (i === 0 && isLikelyName(cleanedLine)) {
+            extractedName = cleanedLine;
+          } else {
+            addressLines.push(line);
+          }
+        }
+      }
+    }
+
+    name = extractedName;
+    address = addressLines.join('\n');
+  } else {
+    // Single Line Parser Mode (Fallback)
+    let tempName = '';
+    let tempAddress = '';
+
+    if (phoneMatchedStr) {
+      const parts = temp.split(phoneMatchedStr);
+      const beforePhone = parts[0].trim();
+      const afterPhone = parts.slice(1).join(phoneMatchedStr).trim();
+
+      if (beforePhone.split(' ').length <= 4 && beforePhone.length > 2 && afterPhone.length > 5) {
+        tempName = beforePhone;
+        tempAddress = afterPhone;
+      }
+    }
+
+    if (!tempName || !tempAddress) {
+      const words = temp.split(/\s+/).filter(Boolean);
+      const addressKeywords = ['flat', 'room', 'shop', 'floor', 'wing', 'building', 'bldg', 'society', 'soc', 'road', 'rd', 'street', 'st', 'lane', 'ln', 'cross', 'nagar', 'behind', 'near', 'opp', 'opposite', 'at', 'post', 'tal', 'dist', 'state', 'sector', 'sec', 'landmark', 'plot', 'house', 'hno'];
+
+      let addressStartIndex = -1;
+      for (let i = 0; i < words.length; i++) {
+        const wordLower = words[i].toLowerCase().replace(/[,.-]/g, '');
+        if (addressKeywords.includes(wordLower) || wordLower.match(/^\d+[a-zA-Z]?$/)) {
+          addressStartIndex = i;
+          break;
+        }
+      }
+
+      if (addressStartIndex === -1) {
+        if (words.length > 2) {
+          tempName = words.slice(0, 2).join(' ');
+          tempAddress = words.slice(2).join(' ');
+        } else {
+          tempName = '';
+          tempAddress = temp;
+        }
+      } else {
+        tempName = words.slice(0, addressStartIndex).join(' ');
+        tempAddress = words.slice(addressStartIndex).join(' ');
+      }
+    }
+
+    if (isLikelyName(tempName)) {
+      name = tempName;
+      address = tempAddress;
+    } else {
+      name = '';
+      address = temp;
+    }
+  }
+
+  // Clean Name
+  name = name.replace(/\b(name|customer name|fullname|full name|cust name|address|add|delivery address|mob|mobile|phone|contact|tel)\b\s*[-:/,.]*\s*/gi, '');
+  name = name.replace(/^[,.\s-]+|[,.\s-]+$/g, '').trim();
+
+  // Clean Address
+  address = address.replace(/\b(address|add|delivery address|pincode|pin\s*code|pin|zipcode|zip|mob|mobile|phone|contact)\b\s*[-:/,.]*\s*/gi, '');
+  address = address.replace(/^[,.\s-]+|[,.\s-]+$/g, '').trim();
+
+  return {
+    customerName: name,
+    contactNo: phone,
+    address: address,
+    pincode: pincode
+  };
+};
+const callGeminiAutofill = async (text, googleSheetsUrl) => {
+  if (googleSheetsUrl) {
+    try {
+      const response = await fetch(googleSheetsUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'text/plain',
+        },
+        body: JSON.stringify({
+          type: 'gemini_autofill',
+          text: text
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.error) {
+          throw new Error(data.error);
+        }
+        const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!responseText) {
+          throw new Error('Empty response from proxy');
+        }
+        let cleanText = responseText.trim();
+        if (cleanText.startsWith('```')) {
+          cleanText = cleanText.replace(/^```(?:json)?\n?/i, '').replace(/\n?```$/i, '').trim();
+        }
+        return JSON.parse(cleanText);
+      }
+    } catch (err) {
+      console.warn('Apps Script Gemini proxy failed. Falling back to direct API call.', err);
+    }
+  }
+
+  const apiKey = "AQ.Ab8RN6LkGftBmc60a_PcqjNNKulwMZyDpXrZdam8M9vgxmNUfA";
+
   const models = [
     'gemini-3.5-flash',
     'gemini-3.6-flash',
@@ -28,9 +217,10 @@ Format the output strictly as a JSON object with keys: "customerName", "contactN
   let lastError = null;
   for (const model of models) {
     try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+      const url = `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${apiKey}`;
       const response = await fetch(url, {
         method: 'POST',
+        credentials: 'omit',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -76,7 +266,7 @@ const SENDER_DETAILS = {
   mobile: '9136603650'
 };
 
-function PrintLabels({ showToast }) {
+function PrintLabels({ showToast, settings }) {
   const [recipients, setRecipients] = useState([
     { name: '', mobile: '', address: '', pincode: '' }
   ]);
@@ -90,18 +280,42 @@ function PrintLabels({ showToast }) {
       return;
     }
 
+    if (settings?.aiAutofillEnabled === false) {
+      // Manual Parser Mode (Local Logic)
+      try {
+        const result = parseInputText(autofillText);
+        if (result) {
+          const updated = [...recipients];
+          if (result.customerName) updated[index].name = result.customerName;
+          if (result.contactNo) updated[index].mobile = result.contactNo;
+          if (result.address) updated[index].address = result.address;
+          if (result.pincode) updated[index].pincode = result.pincode;
+
+          setRecipients(updated);
+          showToast('Recipient autofilled successfully (Local Mode)!');
+          setAutofillIndex(null);
+          setAutofillText('');
+        }
+      } catch (err) {
+        console.error(err);
+        showToast('Local parsing failed.', 'warning');
+      }
+      return;
+    }
+
+    // AI Mode (Gemini)
     setIsAutofilling(true);
     showToast('AI is parsing details...');
 
     try {
-      const result = await callGeminiAutofill(autofillText);
+      const result = await callGeminiAutofill(autofillText, settings?.googleSheetsUrl);
       if (result) {
         const updated = [...recipients];
         if (result.customerName) updated[index].name = result.customerName;
         if (result.contactNo) updated[index].mobile = result.contactNo;
         if (result.address) updated[index].address = result.address;
         if (result.pincode) updated[index].pincode = result.pincode;
-        
+
         setRecipients(updated);
         showToast('Recipient autofilled successfully!');
         setAutofillIndex(null);
@@ -477,8 +691,8 @@ function PrintLabels({ showToast }) {
                     }}
                     className="flex items-center gap-1.5 py-1 px-3 rounded-full border border-secondary/30 bg-secondary-container/15 text-secondary hover:bg-secondary-container/30 transition-all font-bold text-[10px] font-label-caps tracking-wider cursor-pointer active:scale-95 shadow-sm"
                   >
-                    <span className="material-symbols-outlined text-xs font-bold">auto_awesome</span>
-                    <span>{autofillIndex === index ? 'Close AI' : 'AI Fill'}</span>
+                    <span className="material-symbols-outlined text-xs font-bold">{settings?.aiAutofillEnabled === false ? 'schema' : 'auto_awesome'}</span>
+                    <span>{autofillIndex === index ? 'Close' : (settings?.aiAutofillEnabled === false ? 'Ai Magic' : 'Ai Magic')}</span>
                   </button>
 
                   {recipients.length > 1 && (
@@ -523,8 +737,8 @@ function PrintLabels({ showToast }) {
                         </>
                       ) : (
                         <>
-                          <span className="material-symbols-outlined text-xs">auto_awesome</span>
-                          Autofill Form
+                          <span className="material-symbols-outlined text-xs">{settings?.aiAutofillEnabled === false ? 'schema' : 'auto_awesome'}</span>
+                          <span>{settings?.aiAutofillEnabled === false ? 'AI Autofill (Magic Button)' : 'AI Autofill (Magic Button)'}</span>
                         </>
                       )}
                     </button>
@@ -670,49 +884,49 @@ function PrintLabels({ showToast }) {
                     <td className="border-r border-black font-bold px-3 py-0.5 text-xs w-[18%] align-middle leading-tight">To : Name</td>
                     <td className="px-3 py-0.5 text-sm font-bold w-[82%] align-middle leading-tight">{recipient.name || ''}</td>
                   </tr>
-                  
+
                   {/* Address Line 1 */}
                   <tr className="border-b border-black">
                     <td className="border-r border-black font-bold px-3 py-0.5 text-xs align-middle leading-tight">Address</td>
                     <td className="px-3 py-0.5 text-sm font-bold align-middle leading-tight">{addressLines[0]}</td>
                   </tr>
-                  
+
                   {/* Address Line 2 */}
                   <tr className="border-b border-black">
                     <td className="border-r border-black px-3 py-0.5 text-xs align-middle leading-tight"></td>
                     <td className="px-3 py-0.5 text-sm font-bold align-middle leading-tight">{addressLines[1]}</td>
                   </tr>
-                  
+
                   {/* Address Line 3 */}
                   <tr className="border-b border-black">
                     <td className="border-r border-black px-3 py-0.5 text-xs align-middle leading-tight"></td>
                     <td className="px-3 py-0.5 text-sm font-bold align-middle leading-tight">{addressLines[2]}</td>
                   </tr>
-                  
+
                   {/* Address Line 4 */}
                   <tr className="border-b border-black">
                     <td className="border-r border-black px-3 py-0.5 text-xs align-middle leading-tight"></td>
                     <td className="px-3 py-0.5 text-sm font-bold align-middle leading-tight">{addressLines[3]}</td>
                   </tr>
-                  
+
                   {/* Address Line 5 */}
                   <tr className="border-b border-black">
                     <td className="border-r border-black px-3 py-0.5 text-xs align-middle leading-tight"></td>
                     <td className="px-3 py-0.5 text-sm font-bold align-middle leading-tight">{addressLines[4]}</td>
                   </tr>
-                  
+
                   {/* Pincode Row */}
                   <tr className="border-b border-black">
                     <td className="border-r border-black font-bold px-3 py-0.5 text-xs align-middle leading-tight">PinCode</td>
                     <td className="px-3 py-0.5 text-sm font-bold align-middle leading-tight">{recipient.pincode || ''}</td>
                   </tr>
-                  
+
                   {/* Mobile Row */}
                   <tr className="border-b border-black">
                     <td className="border-r border-black font-bold px-3 py-0.5 text-xs align-middle leading-tight">Mobile</td>
                     <td className="px-3 py-0.5 text-sm font-bold align-middle leading-tight">{recipient.mobile || ''}</td>
                   </tr>
-                  
+
                   {/* Sender Details Rows */}
                   <tr className="border-b border-black">
                     <td className="border-r border-black font-bold px-3 py-0.5 text-xs align-middle leading-tight">From :</td>
